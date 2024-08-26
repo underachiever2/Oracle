@@ -1,0 +1,40 @@
+cd ~/Oracle/templates
+nano UI.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Analysis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Stock Analysis Dashboard</h1>
+            <h2>Upload Your Chart and Analyze</h2>
+        </header>
+
+        <div class="buttons">
+            <button id="upload-chart" onclick="uploadChart()">Upload Chart</button>
+        </div>
+
+        <div class="login-signup">
+            <button id="sign-up" onclick="signUp()">Sign Up</button>
+            <button id="sign-in" onclick="signIn()">Sign In</button>
+        </div>
+
+        <div class="chart-sources">
+            <h3>Best Places to Get Charts:</h3>
+            <ul>
+                <li><a href="https://www.nasdaq.com/" target="_blank">Nasdaq</a></li>
+                <li><a href="https://www.barchart.com/" target="_blank">Barchart</a></li>
+                <li><a href="https://finance.yahoo.com/" target="_blank">Yahoo Finance</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+</body>
+</html>
+
