@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Result</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Analysis Result for {{ analysis.stock_name }} ({{ analysis.ticker }})</h1>
+        <p><strong>Last Price:</strong> ${{ analysis.last_price }}</p>
+        <p><strong>Today's Prediction:</strong> ${{ analysis.prediction_today }}</p>
+        <p><strong>30-Day Prediction:</strong> ${{ analysis.prediction_30_days }}</p>
+        <p><strong>60-Day Prediction:</strong> ${{ analysis.prediction_60_days }}</p>
+        <p><strong>90-Day Prediction:</strong> ${{ analysis.prediction_90_days }}</p>
+        <p><strong>Prediction Accuracy:</strong> {{ analysis.prediction_accuracy }}%</p>
+        <p><strong>Summary:</strong> {{ analysis.summary }}</p>
+
+        <h2>Historical Data and Predictions Chart</h2>
+        <img src="{{ url_for('static', filename=chart_path.split('/')[-1]) }}" alt="Chart">
+
+        <br><br>
+        <p><strong>Disclaimer:</strong> This analysis is not financial advice. Please consult a financial professional before making any investment decisions.</p>
+
+        <br><br>
+        <button onclick="location.href='/'">Back to Home</button>
+    </div>
+</body>
+</html>
+

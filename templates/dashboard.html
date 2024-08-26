@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome, {{ username }}!</h1>
+        <h2>What would you like to do?</h2>
+
+        <button onclick="location.href='/upload_chart'">Upload Chart</button>
+        <button onclick="location.href='/analyze_stock'">Analyze a Stock</button>
+        <button onclick="location.href='/price_predictions'">Get Price Predictions</button>
+        <!-- Additional features can be added here -->
+
+        <h3>Available Stocks for Analysis:</h3>
+        <ul>
+            {% for stock in available_stocks %}
+                <li>{{ stock.name }} ({{ stock.ticker }}) - <a href="/analyze/{{ stock.ticker }}">Analyze</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+</html>
+

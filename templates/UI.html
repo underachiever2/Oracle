@@ -1,5 +1,3 @@
-cd ~/Oracle/templates
-nano UI.html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,12 +14,18 @@ nano UI.html
         </header>
 
         <div class="buttons">
-            <button id="upload-chart" onclick="uploadChart()">Upload Chart</button>
+            <form action="{{ url_for('upload_chart') }}">
+                <button type="submit">Upload Chart</button>
+            </form>
         </div>
 
         <div class="login-signup">
-            <button id="sign-up" onclick="signUp()">Sign Up</button>
-            <button id="sign-in" onclick="signIn()">Sign In</button>
+            <form action="{{ url_for('sign_up') }}">
+                <button type="submit">Sign Up</button>
+            </form>
+            <form action="{{ url_for('sign_in') }}">
+                <button type="submit">Sign In</button>
+            </form>
         </div>
 
         <div class="chart-sources">
@@ -33,8 +37,6 @@ nano UI.html
             </ul>
         </div>
     </div>
-
-    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
 </body>
 </html>
 
