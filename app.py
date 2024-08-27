@@ -1,14 +1,50 @@
+from flask import Flask, render_template, request, redirect, url_for, session
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
-import os
-from flask import Flask, render_template, request, redirect, url_for, session, send_file
+import numpy as np
+from sklearn.linear_model import LinearRegression
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-# Mock database for users and stocks
 users = {}
-stocks = []
+user_charts = {}
+user_favorites = {}
+
+def save_chart_analysis(username, stock_name, ticker, analysis):
+    if username not in user_charts:
+        user_charts[username] = []
+    user_charts[username].append(analysis)
+
+def generate_stock_illustration(df, ticker):
+    plt.figure(figsize=(10, 5))
+    plt.plot(df['Date'], df['Close/Last'], label=ticker)
+    plt.title(f"{ticker} Stock Price Over Time")
+    plt.xlabel("Date")
+    plt.ylabel("Price")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f"static/{ticker}_illustration.png")
+    plt.close()
+
+def clean_price(price):
+    """Function to clean the price string and convert it to a float."""
+    return float(price.replace('$', '').replace(',', ''))
+
+def calculate_prediction_accuracy(df):
+    df['Close/Last'] = df['Close/Last'].apply(clean_price)
+    df['Days'] = np.arange(len(df))
+    
+    X = df[['Days']].values
+    y = df['Close/Last'].values
+    
+    model = LinearRegression()
+    model.fit(X, y)
+    
+    predictions = model.predict(X)
+    accuracy = 100 - (np.mean(np.abs((y - predictions) / y)) * 100)
+    return round(accuracy, 2)
 
 @app.route('/')
 def home():
@@ -20,8 +56,8 @@ def sign_up():
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
-        # Store user information (You should hash the password in a real app)
         users[username] = {'email': email, 'password': password}
+        user_favorites[username] = []
         return redirect(url_for('sign_in'))
     return render_template('signup.html')
 
@@ -30,19 +66,25 @@ def sign_in():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        # Check if user exists and password is correct
         if username in users and users[username]['password'] == password:
             session['username'] = username
-            return redirect(url_for('dashboard'))
+            if username not in user_charts:
+                user_charts[username] = []
+            return redirect(url_for('member_interface'))
         return "Invalid credentials, please try again."
     return render_template('signin.html')
 
-@app.route('/dashboard')
-def dashboard():
+@app.route('/member')
+def member_interface():
     if 'username' not in session:
         return redirect(url_for('sign_in'))
+    
     username = session['username']
-    return render_template('dashboard.html', username=username, available_stocks=stocks)
+    
+    if username not in user_favorites:
+        user_favorites[username] = []
+
+    return render_template('member_interface.html', username=username, charts=user_charts[username])
 
 @app.route('/upload_chart', methods=['GET', 'POST'])
 def upload_chart():
@@ -53,45 +95,37 @@ def upload_chart():
         stock_name = request.form['stock_name']
         ticker = request.form['ticker']
 
-        # Read the CSV file into a DataFrame
+        # Load CSV data
         df = pd.read_csv(file)
-
-        # Ensure the Date column is in datetime format
         df['Date'] = pd.to_datetime(df['Date'])
-
-        # Sort the DataFrame by date to ensure the latest date is at the end
         df = df.sort_values(by='Date')
-
-        # Get the last row of the DataFrame, which should be the most recent date
         last_row = df.iloc[-1]
-        last_price = last_row['Close/Last']  # Assuming the column name is 'Close/Last'
-        last_price = float(last_price.replace('$', '').replace(',', ''))  # Clean and convert to float
+        last_price = last_row['Close/Last']
 
-        # Simulated predictions (replace with actual logic)
-        prediction_30_days = last_price * 1.05  # Example: 5% increase
+        # Clean the last price and convert it to a float
+        last_price = clean_price(last_price)
+
+        # Generate predictions based on the last price
+        prediction_30_days = last_price * 1.05
         prediction_60_days = last_price * 1.10
         prediction_90_days = last_price * 1.15
-        prediction_today = last_price * 1.02  # Example: 2% increase for today's prediction
+        prediction_today = last_price * 1.02
 
-        # Placeholder for prediction accuracy (replace with actual logic)
-        prediction_accuracy = 85.0  # Example: 85% accuracy
+        # Calculate prediction accuracy
+        prediction_accuracy = calculate_prediction_accuracy(df)
 
-        # Example bullish and bearish indicators (replace with actual logic)
-        bullish_indicators = 3
-        bearish_indicators = 1
-
-        # Adjust the grammar based on the number of indicators
-        bullish_text = f"{bullish_indicators} {'is' if bullish_indicators == 1 else 'are'} bullish"
-        bearish_text = f"{bearish_indicators} {'is' if bearish_indicators == 1 else 'are'} bearish"
-
-        summary = (f"The stock {stock_name} ({ticker}) is showing a bullish trend with an expected price increase "
-                   f"over the next 90 days. Out of 4 indicators, {bullish_text} and {bearish_text}. "
-                   f"The prediction accuracy is estimated to be {prediction_accuracy}%.")
+        # Generate stock-specific analysis summary
+        summary = (f"The stock {stock_name} ({ticker}) is currently priced at ${last_price:.2f}. "
+                   f"In 30 days, the price is predicted to reach ${prediction_30_days:.2f}. "
+                   f"In 60 days, the price is predicted to reach ${prediction_60_days:.2f}. "
+                   f"In 90 days, the price is predicted to reach ${prediction_90_days:.2f}. "
+                   f"The prediction accuracy is estimated to be {prediction_accuracy}%. "
+                   f"Based on the current trends, the stock is showing a bullish pattern.")
 
         analysis = {
             'stock_name': stock_name,
             'ticker': ticker,
-            'last_price': last_price,
+            'last_price': round(last_price, 2),
             'prediction_30_days': round(prediction_30_days, 2),
             'prediction_60_days': round(prediction_60_days, 2),
             'prediction_90_days': round(prediction_90_days, 2),
@@ -100,36 +134,44 @@ def upload_chart():
             'prediction_accuracy': prediction_accuracy
         }
 
-        # Generate a chart
-        plt.figure(figsize=(10, 6))
-        plt.plot(df['Date'], df['Close/Last'].apply(lambda x: float(x.replace('$', '').replace(',', ''))), label='Historical Prices')
-        plt.axhline(y=last_price, color='r', linestyle='--', label='Last Price')
-        plt.axhline(y=prediction_today, color='g', linestyle='--', label="Today's Prediction")
-        plt.title(f"{stock_name} ({ticker}) - Historical Data and Predictions")
-        plt.xlabel('Date')
-        plt.ylabel('Price')
-        plt.legend()
+        generate_stock_illustration(df, ticker)
 
-        # Save the chart to a file
-        chart_path = f'static/{ticker}_chart.png'
-        plt.savefig(chart_path)
-        plt.close()
+        # Save the analysis to user charts
+        if not any(analysis['ticker'] == chart['ticker'] for chart in user_charts[session['username']]):
+            save_chart_analysis(session['username'], stock_name, ticker, analysis)
 
-        # Render the analysis template with the analysis results and the chart
-        return render_template('analysis.html', analysis=analysis, chart_path=chart_path)
+        return render_template('member_interface.html', username=session['username'], charts=user_charts[session['username']], analysis=analysis)
 
     return render_template('upload_chart.html')
 
-@app.route('/analyze/<ticker>')
-def analyze_stock(ticker):
-    # Analysis logic goes here
-    return f"Analysis for {ticker} is not implemented yet."
+@app.route('/save_chart', methods=['POST'])
+def save_chart():
+    if 'username' not in session:
+        return redirect(url_for('sign_in'))
 
-@app.route('/price_predictions')
-def price_predictions():
-    # Price prediction logic goes here
-    return "Price prediction feature is not implemented yet."
+    username = session['username']
+    stock_name = request.form['stock_name']
+    ticker = request.form['ticker']
+    last_price = request.form['last_price']
+    prediction_30_days = request.form['prediction_30_days']
+    prediction_60_days = request.form['prediction_60_days']
+    prediction_90_days = request.form['prediction_90_days']
+    summary = request.form['summary']
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    analysis = {
+        'stock_name': stock_name,
+        'ticker': ticker,
+        'last_price': last_price,
+        'prediction_30_days': prediction_30_days,
+        'prediction_60_days': prediction_60_days,
+        'prediction_90_days': prediction_90_days,
+        'summary': summary
+    }
+
+    save_chart_analysis(username, stock_name, ticker, analysis)
+
+    return redirect(url_for('member_interface'))
+
+if __name__ == "__main__":
+    app.run(debug=True, host='0.0.0.0', port=8000)
 

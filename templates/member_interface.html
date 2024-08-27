@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome, {{ username }}!</h1>
+
+        <h2>Your Uploaded Charts</h2>
+        <ul>
+            {% for chart in charts %}
+                <li>{{ chart.stock_name }} ({{ chart.ticker }})</li>
+            {% endfor %}
+        </ul>
+
+        <h2>Upload a New Chart</h2>
+        <form action="{{ url_for('upload_chart') }}" method="POST" enctype="multipart/form-data">
+            <label for="stock_name">Stock Name:</label>
+            <input type="text" name="stock_name" required><br><br>
+
+            <label for="ticker">Ticker Symbol:</label>
+            <input type="text" name="ticker" required><br><br>
+
+            <input type="file" name="file" accept=".csv" required><br><br>
+
+            <button type="submit">Upload Chart</button>
+        </form>
+
+        {% if analysis %}
+            <div class="analysis">
+                <h2>Analysis for {{ analysis.stock_name }} ({{ analysis.ticker }})</h2>
+                <p>Last Price: ${{ analysis.last_price }}</p>
+                <p>30-Day Prediction: ${{ analysis.prediction_30_days }}</p>
+                <p>60-Day Prediction: ${{ analysis.prediction_60_days }}</p>
+                <p>90-Day Prediction: ${{ analysis.prediction_90_days }}</p>
+                <p>Prediction Today: ${{ analysis.prediction_today }}</p>
+                <p>Summary: {{ analysis.summary }}</p>
+                <p>Prediction Accuracy: {{ analysis.prediction_accuracy }}%</p>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
+
